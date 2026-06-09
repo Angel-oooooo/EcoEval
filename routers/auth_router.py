@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-from auth import verificar_contrasena, crear_token, hashear_contrasena
+from auth import verificar_contrasena, crear_token, hashear_contrasena, obtener_usuario_actual
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
@@ -55,4 +55,28 @@ def login(
         )
 
     token = crear_token({"sub": usuario.correo, "rol": usuario.rol})
-    return {"access_token": token, "token_type": "bearer"}
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "usuario": {
+            "id": usuario.id,
+            "nombre": usuario.nombre,
+            "apellido": usuario.apellido,
+            "correo": usuario.correo,
+            "rol": usuario.rol,
+            "puesto": usuario.puesto
+        }
+    }
+
+@router.get("/me")
+def obtener_mi_perfil(
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    return {
+        "id": usuario_actual.id,
+        "nombre": usuario_actual.nombre,
+        "apellido": usuario_actual.apellido,
+        "correo": usuario_actual.correo,
+        "rol": usuario_actual.rol,
+        "puesto": usuario_actual.puesto
+    }

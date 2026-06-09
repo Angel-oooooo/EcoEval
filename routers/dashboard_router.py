@@ -64,9 +64,16 @@ def historial_empleado(
 
     historial = []
     for a in asignaciones:
-        resultado = db.query(models.ResultadoExamen).filter(
-            models.ResultadoExamen.usuario_id == usuario_id
+        examen = db.query(models.Examen).filter(
+            models.Examen.curso_id == a.curso_id
         ).first()
+
+        resultado = None
+        if examen:
+            resultado = db.query(models.ResultadoExamen).filter(
+                models.ResultadoExamen.usuario_id == usuario_id,
+                models.ResultadoExamen.examen_id == examen.id
+            ).order_by(models.ResultadoExamen.intento_numero.desc()).first()
 
         historial.append({
             "curso": a.curso.titulo if a.curso else "N/A",
@@ -80,6 +87,46 @@ def historial_empleado(
     return {
         "empleado": f"{empleado.nombre} {empleado.apellido}" if empleado else "No encontrado",
         "historial": historial
+    }
+
+@router.get("/curso/{curso_id}")
+def empleados_por_curso(
+    curso_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    curso = db.query(models.Curso).filter(models.Curso.id == curso_id).first()
+
+    asignaciones = db.query(models.AsignacionCurso).filter(
+        models.AsignacionCurso.curso_id == curso_id
+    ).all()
+
+    empleados = []
+    for a in asignaciones:
+        examen = db.query(models.Examen).filter(
+            models.Examen.curso_id == curso_id
+        ).first()
+
+        resultado = None
+        if examen:
+            resultado = db.query(models.ResultadoExamen).filter(
+                models.ResultadoExamen.usuario_id == a.usuario_id,
+                models.ResultadoExamen.examen_id == examen.id
+            ).order_by(models.ResultadoExamen.intento_numero.desc()).first()
+
+        empleados.append({
+            "usuario_id": a.usuario_id,
+            "empleado": f"{a.usuario.nombre} {a.usuario.apellido}" if a.usuario else "N/A",
+            "estado": a.estado,
+            "fecha_asignacion": a.fecha_asignacion,
+            "fecha_limite": a.fecha_limite,
+            "puntuacion": resultado.puntuacion if resultado else None,
+            "aprobado": resultado.aprobado if resultado else None
+        })
+
+    return {
+        "curso": curso.titulo if curso else "No encontrado",
+        "empleados": empleados
     }
 
 @router.get("/mis-resultados")

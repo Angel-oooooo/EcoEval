@@ -17,10 +17,48 @@ class CursoCrear(BaseModel):
     duracion_horas: Optional[int] = 1
     porcentaje_aprobatorio: Optional[int] = 70
 
+class CursoEditar(BaseModel):
+    titulo: Optional[str] = None
+    descripcion: Optional[str] = None
+    objetivo: Optional[str] = None
+    material_texto: Optional[str] = None
+    duracion_horas: Optional[int] = None
+    porcentaje_aprobatorio: Optional[int] = None
+
 class AsignacionCrear(BaseModel):
     curso_id: int
     usuario_id: int
     fecha_limite: Optional[str] = None
+
+@router.get("/")
+def listar_cursos(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    cursos = db.query(models.Curso).filter(models.Curso.activo == True).all()
+    return [
+        {
+            "id": c.id,
+            "titulo": c.titulo,
+            "descripcion": c.descripcion,
+            "objetivo": c.objetivo,
+            "duracion_horas": c.duracion_horas,
+            "porcentaje_aprobatorio": c.porcentaje_aprobatorio,
+            "material_texto": c.material_texto,
+        }
+        for c in cursos
+    ]
+
+# mis-cursos ANTES de /{curso_id} para que FastAPI no lo confunda
+@router.get("/mis-cursos")
+def mis_cursos(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    asignaciones = db.query(models.AsignacionCurso).filter(
+        models.AsignacionCurso.usuario_id == usuario_actual.id
+    ).all()
+    return asignaciones
 
 @router.post("/")
 def crear_curso(
@@ -45,14 +83,6 @@ def crear_curso(
     db.refresh(nuevo)
     return {"mensaje": "Curso creado exitosamente", "id": nuevo.id}
 
-@router.get("/")
-def listar_cursos(
-    db: Session = Depends(get_db),
-    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
-):
-    cursos = db.query(models.Curso).filter(models.Curso.activo == True).all()
-    return cursos
-
 @router.post("/asignar")
 def asignar_curso(
     asignacion: AsignacionCrear,
@@ -75,12 +105,57 @@ def asignar_curso(
     db.commit()
     return {"mensaje": "Curso asignado exitosamente"}
 
-@router.get("/mis-cursos")
-def mis_cursos(
+@router.get("/{curso_id}")
+def obtener_curso(
+    curso_id: int,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
 ):
-    asignaciones = db.query(models.AsignacionCurso).filter(
-        models.AsignacionCurso.usuario_id == usuario_actual.id
-    ).all()
-    return asignaciones
+    curso = db.query(models.Curso).filter(
+        models.Curso.id == curso_id,
+        models.Curso.activo == True
+    ).first()
+    if not curso:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+    return curso
+
+@router.put("/{curso_id}")
+def editar_curso(
+    curso_id: int,
+    data: CursoEditar,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    if usuario_actual.rol not in ["admin", "instructor"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso")
+
+    curso = db.query(models.Curso).filter(models.Curso.id == curso_id).first()
+    if not curso:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+
+    if data.titulo is not None: curso.titulo = data.titulo
+    if data.descripcion is not None: curso.descripcion = data.descripcion
+    if data.objetivo is not None: curso.objetivo = data.objetivo
+    if data.material_texto is not None: curso.material_texto = data.material_texto
+    if data.duracion_horas is not None: curso.duracion_horas = data.duracion_horas
+    if data.porcentaje_aprobatorio is not None: curso.porcentaje_aprobatorio = data.porcentaje_aprobatorio
+
+    db.commit()
+    return {"mensaje": "Curso actualizado"}
+
+@router.delete("/{curso_id}")
+def desactivar_curso(
+    curso_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    if usuario_actual.rol not in ["admin", "instructor"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso")
+
+    curso = db.query(models.Curso).filter(models.Curso.id == curso_id).first()
+    if not curso:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+
+    curso.activo = False
+    db.commit()
+    return {"mensaje": "Curso desactivado"}

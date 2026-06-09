@@ -35,6 +35,24 @@ class EnvioExamen(BaseModel):
     respuestas: List[RespuestaEnviar]
 
 # Endpoints
+@router.get("/")
+def listar_examenes(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    examenes = db.query(models.Examen).all()
+    return [
+        {
+            "id": e.id,
+            "titulo": e.titulo,
+            "curso_id": e.curso_id,
+            "curso": e.curso.titulo if e.curso else "N/A",
+            "intentos_permitidos": e.intentos_permitidos,
+            "total_preguntas": len(e.preguntas),
+        }
+        for e in examenes
+    ]
+
 @router.post("/")
 def crear_examen(
     examen: ExamenCrear,
@@ -107,6 +125,23 @@ def obtener_examen(
 
     return resultado
 
+@router.delete("/{examen_id}")
+def eliminar_examen(
+    examen_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    if usuario_actual.rol not in ["admin", "instructor"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso")
+
+    examen = db.query(models.Examen).filter(models.Examen.id == examen_id).first()
+    if not examen:
+        raise HTTPException(status_code=404, detail="Examen no encontrado")
+
+    db.delete(examen)
+    db.commit()
+    return {"mensaje": "Examen eliminado"}
+
 @router.post("/responder")
 def responder_examen(
     envio: EnvioExamen,
@@ -153,6 +188,15 @@ def responder_examen(
 
     resultado.puntuacion = puntuacion
     resultado.aprobado = aprobado
+
+    if aprobado:
+        asignacion = db.query(models.AsignacionCurso).filter(
+            models.AsignacionCurso.usuario_id == usuario_actual.id,
+            models.AsignacionCurso.curso_id == examen.curso_id
+        ).first()
+        if asignacion:
+            asignacion.estado = "completado"
+
     db.commit()
 
     return {

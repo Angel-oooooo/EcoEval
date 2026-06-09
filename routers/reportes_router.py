@@ -64,9 +64,16 @@ def reporte_empleado(
     filas = [encabezados]
 
     for a in asignaciones:
-        resultado = db.query(models.ResultadoExamen).filter(
-            models.ResultadoExamen.usuario_id == usuario_id
+        examen = db.query(models.Examen).filter(
+            models.Examen.curso_id == a.curso_id
         ).first()
+
+        resultado = None
+        if examen:
+            resultado = db.query(models.ResultadoExamen).filter(
+                models.ResultadoExamen.usuario_id == usuario_id,
+                models.ResultadoExamen.examen_id == examen.id
+            ).order_by(models.ResultadoExamen.intento_numero.desc()).first()
 
         fecha_limite = a.fecha_limite.strftime('%d/%m/%Y') if a.fecha_limite else 'Sin fecha'
         puntuacion = f"{resultado.puntuacion}%" if resultado else 'No presentado'

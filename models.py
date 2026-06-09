@@ -63,6 +63,7 @@ class Examen(Base):
     intentos_permitidos = Column(Integer, default=1)
     creado_por = Column(Integer, ForeignKey("usuarios.id"))
     fecha_creacion = Column(DateTime, default=datetime.datetime.utcnow)
+    curso = relationship("Curso")
     preguntas = relationship("Pregunta", back_populates="examen")
 
 class Pregunta(Base):
