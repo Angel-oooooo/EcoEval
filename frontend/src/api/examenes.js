@@ -25,6 +25,12 @@ export async function crearExamen(data) {
   return res.json()
 }
 
+export async function getDetalleExamen(id) {
+  const res = await fetch(`${BASE_URL}/examenes/${id}/detalle`, { headers: headers() })
+  if (!res.ok) throw new Error('Error al cargar detalle del examen')
+  return res.json()
+}
+
 export async function eliminarExamen(id) {
   const res = await fetch(`${BASE_URL}/examenes/${id}`, {
     method: 'DELETE',

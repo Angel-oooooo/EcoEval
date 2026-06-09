@@ -49,6 +49,9 @@ def listar_examenes(
             "curso": e.curso.titulo if e.curso else "N/A",
             "intentos_permitidos": e.intentos_permitidos,
             "total_preguntas": len(e.preguntas),
+            "total_resultados": db.query(models.ResultadoExamen).filter(
+                models.ResultadoExamen.examen_id == e.id
+            ).count(),
         }
         for e in examenes
     ]
@@ -61,6 +64,12 @@ def crear_examen(
 ):
     if usuario_actual.rol not in ["admin", "instructor"]:
         raise HTTPException(status_code=403, detail="No tienes permiso")
+
+    examen_existente = db.query(models.Examen).filter(
+        models.Examen.curso_id == examen.curso_id
+    ).first()
+    if examen_existente:
+        raise HTTPException(status_code=400, detail="Este curso ya tiene un examen asignado")
 
     nuevo_examen = models.Examen(
         curso_id=examen.curso_id,
@@ -93,6 +102,37 @@ def crear_examen(
 
     db.commit()
     return {"mensaje": "Examen creado exitosamente", "id": nuevo_examen.id}
+
+@router.get("/{examen_id}/detalle")
+def obtener_examen_detalle(
+    examen_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    if usuario_actual.rol not in ["admin", "instructor"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso")
+
+    examen = db.query(models.Examen).filter(models.Examen.id == examen_id).first()
+    if not examen:
+        raise HTTPException(status_code=404, detail="Examen no encontrado")
+
+    return {
+        "id": examen.id,
+        "titulo": examen.titulo,
+        "instrucciones": examen.instrucciones,
+        "preguntas": [
+            {
+                "id": p.id,
+                "texto_pregunta": p.texto_pregunta,
+                "orden": p.orden,
+                "opciones": [
+                    {"id": o.id, "texto_opcion": o.texto_opcion, "es_correcta": o.es_correcta}
+                    for o in p.opciones
+                ]
+            }
+            for p in examen.preguntas
+        ]
+    }
 
 @router.get("/{examen_id}")
 def obtener_examen(
@@ -137,6 +177,12 @@ def eliminar_examen(
     examen = db.query(models.Examen).filter(models.Examen.id == examen_id).first()
     if not examen:
         raise HTTPException(status_code=404, detail="Examen no encontrado")
+
+    tiene_resultados = db.query(models.ResultadoExamen).filter(
+        models.ResultadoExamen.examen_id == examen_id
+    ).first()
+    if tiene_resultados:
+        raise HTTPException(status_code=400, detail="No se puede eliminar un examen que ya tiene respuestas registradas")
 
     db.delete(examen)
     db.commit()
