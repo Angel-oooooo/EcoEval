@@ -58,7 +58,37 @@ def mis_cursos(
     asignaciones = db.query(models.AsignacionCurso).filter(
         models.AsignacionCurso.usuario_id == usuario_actual.id
     ).all()
-    return asignaciones
+
+    resultado = []
+    for a in asignaciones:
+        examen = db.query(models.Examen).filter(
+            models.Examen.curso_id == a.curso_id
+        ).first()
+
+        resultado_examen = None
+        if examen:
+            resultado_examen = db.query(models.ResultadoExamen).filter(
+                models.ResultadoExamen.usuario_id == usuario_actual.id,
+                models.ResultadoExamen.examen_id == examen.id
+            ).order_by(models.ResultadoExamen.intento_numero.desc()).first()
+
+        resultado.append({
+            "asignacion_id": a.id,
+            "curso_id": a.curso_id,
+            "curso": a.curso.titulo if a.curso else "N/A",
+            "descripcion": a.curso.descripcion if a.curso else "",
+            "material_texto": a.curso.material_texto if a.curso else "",
+            "estado": a.estado,
+            "fecha_asignacion": a.fecha_asignacion,
+            "fecha_limite": a.fecha_limite,
+            "examen_id": examen.id if examen else None,
+            "intentos_permitidos": examen.intentos_permitidos if examen else None,
+            "puntuacion": resultado_examen.puntuacion if resultado_examen else None,
+            "aprobado": resultado_examen.aprobado if resultado_examen else None,
+            "intento_numero": resultado_examen.intento_numero if resultado_examen else 0,
+        })
+
+    return resultado
 
 @router.post("/")
 def crear_curso(

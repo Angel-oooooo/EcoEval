@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { cerrarSesion, getUsuario } from '../api/auth'
 
-const links = [
+const linksAdmin = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/empleados', label: 'Empleados' },
   { to: '/cursos', label: 'Cursos' },
@@ -9,9 +9,15 @@ const links = [
   { to: '/reportes', label: 'Reportes' },
 ]
 
+const linksEmpleado = [
+  { to: '/mis-cursos', label: 'Mis Cursos' },
+  { to: '/mis-resultados', label: 'Mis Resultados' },
+]
+
 export default function Layout({ children }) {
   const navigate = useNavigate()
   const usuario = getUsuario()
+  const links = usuario?.rol === 'empleado' ? linksEmpleado : linksAdmin
 
   function handleLogout() {
     cerrarSesion()
