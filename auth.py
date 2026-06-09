@@ -5,10 +5,15 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from database import get_db
+from dotenv import load_dotenv
 import models
+import os
 
-# Clave secreta para firmar los tokens — en producción esto va en variables de entorno
-SECRET_KEY = "ecoeval-clave-secreta-2024"
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY no definida en el entorno")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 

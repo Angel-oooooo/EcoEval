@@ -1,6 +1,6 @@
-import { getToken } from './auth'
+import { getToken, apiFetch } from './auth'
 
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_URL
 
 function headers() {
   return {
@@ -10,13 +10,13 @@ function headers() {
 }
 
 export async function getUsuarios() {
-  const res = await fetch(`${BASE_URL}/usuarios/`, { headers: headers() })
+  const res = await apiFetch(`${BASE_URL}/usuarios/`, { headers: headers() })
   if (!res.ok) throw new Error('Error al cargar usuarios')
   return res.json()
 }
 
 export async function crearUsuario(data) {
-  const res = await fetch(`${BASE_URL}/auth/registro`, {
+  const res = await apiFetch(`${BASE_URL}/auth/registro`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify(data),
@@ -26,7 +26,7 @@ export async function crearUsuario(data) {
 }
 
 export async function editarUsuario(id, data) {
-  const res = await fetch(`${BASE_URL}/usuarios/${id}`, {
+  const res = await apiFetch(`${BASE_URL}/usuarios/${id}`, {
     method: 'PUT',
     headers: headers(),
     body: JSON.stringify(data),
@@ -36,13 +36,13 @@ export async function editarUsuario(id, data) {
 }
 
 export async function getCursosDeEmpleado(usuario_id) {
-  const res = await fetch(`${BASE_URL}/dashboard/empleado/${usuario_id}`, { headers: headers() })
+  const res = await apiFetch(`${BASE_URL}/dashboard/empleado/${usuario_id}`, { headers: headers() })
   if (!res.ok) throw new Error('Error al cargar cursos del empleado')
   return res.json()
 }
 
 export async function desactivarUsuario(id) {
-  const res = await fetch(`${BASE_URL}/usuarios/${id}`, {
+  const res = await apiFetch(`${BASE_URL}/usuarios/${id}`, {
     method: 'DELETE',
     headers: headers(),
   })

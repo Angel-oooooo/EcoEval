@@ -1,6 +1,6 @@
-import { getToken } from './auth'
+import { getToken, apiFetch } from './auth'
 
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_URL
 
 function headers() {
   return {
@@ -10,13 +10,13 @@ function headers() {
 }
 
 export async function getExamenes() {
-  const res = await fetch(`${BASE_URL}/examenes/`, { headers: headers() })
+  const res = await apiFetch(`${BASE_URL}/examenes/`, { headers: headers() })
   if (!res.ok) throw new Error('Error al cargar exámenes')
   return res.json()
 }
 
 export async function crearExamen(data) {
-  const res = await fetch(`${BASE_URL}/examenes/`, {
+  const res = await apiFetch(`${BASE_URL}/examenes/`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify(data),
@@ -26,13 +26,13 @@ export async function crearExamen(data) {
 }
 
 export async function getDetalleExamen(id) {
-  const res = await fetch(`${BASE_URL}/examenes/${id}/detalle`, { headers: headers() })
+  const res = await apiFetch(`${BASE_URL}/examenes/${id}/detalle`, { headers: headers() })
   if (!res.ok) throw new Error('Error al cargar detalle del examen')
   return res.json()
 }
 
 export async function eliminarExamen(id) {
-  const res = await fetch(`${BASE_URL}/examenes/${id}`, {
+  const res = await apiFetch(`${BASE_URL}/examenes/${id}`, {
     method: 'DELETE',
     headers: headers(),
   })

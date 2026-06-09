@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_URL
 
 export async function login(correo, contrasena) {
   const res = await fetch(`${BASE_URL}/auth/login`, {
@@ -27,4 +27,14 @@ export function guardarSesion(token, usuario) {
 export function cerrarSesion() {
   localStorage.removeItem('token')
   localStorage.removeItem('usuario')
+}
+
+export async function apiFetch(url, options = {}) {
+  const res = await fetch(url, options)
+  if (res.status === 401) {
+    cerrarSesion()
+    window.location.href = '/login'
+    return
+  }
+  return res
 }
