@@ -52,3 +52,56 @@ class AsignacionCurso(Base):
     estado = Column(String, default="pendiente")  # pendiente, en_progreso, completado, vencido
     curso = relationship("Curso", back_populates="asignaciones")
     usuario = relationship("Usuario")
+
+class Examen(Base):
+    __tablename__ = "examenes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    curso_id = Column(Integer, ForeignKey("cursos.id"))
+    titulo = Column(String, nullable=False)
+    instrucciones = Column(String)
+    intentos_permitidos = Column(Integer, default=1)
+    creado_por = Column(Integer, ForeignKey("usuarios.id"))
+    fecha_creacion = Column(DateTime, default=datetime.datetime.utcnow)
+    preguntas = relationship("Pregunta", back_populates="examen")
+
+class Pregunta(Base):
+    __tablename__ = "preguntas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    examen_id = Column(Integer, ForeignKey("examenes.id"))
+    texto_pregunta = Column(String, nullable=False)
+    orden = Column(Integer, default=1)
+    examen = relationship("Examen", back_populates="preguntas")
+    opciones = relationship("OpcionRespuesta", back_populates="pregunta")
+
+class OpcionRespuesta(Base):
+    __tablename__ = "opciones_respuesta"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pregunta_id = Column(Integer, ForeignKey("preguntas.id"))
+    texto_opcion = Column(String, nullable=False)
+    es_correcta = Column(Boolean, default=False)
+    pregunta = relationship("Pregunta", back_populates="opciones")
+
+class ResultadoExamen(Base):
+    __tablename__ = "resultados_examen"
+
+    id = Column(Integer, primary_key=True, index=True)
+    examen_id = Column(Integer, ForeignKey("examenes.id"))
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
+    puntuacion = Column(Integer, default=0)
+    aprobado = Column(Boolean, default=False)
+    fecha_inicio = Column(DateTime, default=datetime.datetime.utcnow)
+    fecha_fin = Column(DateTime, nullable=True)
+    intento_numero = Column(Integer, default=1)
+    respuestas = relationship("RespuestaUsuario", back_populates="resultado")
+
+class RespuestaUsuario(Base):
+    __tablename__ = "respuestas_usuario"
+
+    id = Column(Integer, primary_key=True, index=True)
+    resultado_id = Column(Integer, ForeignKey("resultados_examen.id"))
+    pregunta_id = Column(Integer, ForeignKey("preguntas.id"))
+    opcion_seleccionada_id = Column(Integer, ForeignKey("opciones_respuesta.id"))
+    resultado = relationship("ResultadoExamen", back_populates="respuestas")
