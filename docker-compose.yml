@@ -30,6 +30,8 @@ services:
     build:
       context: ./frontend
     container_name: ecoeval_frontend
+    environment:
+      PORT: 80
     ports:
       - "80:80"
     depends_on:

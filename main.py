@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from database import engine, Base
 from dotenv import load_dotenv
 import models
@@ -34,6 +36,12 @@ app.include_router(dashboard_router.router)
 app.include_router(reportes_router.router)
 app.include_router(usuarios_router.router)
 
-@app.get("/")
-def raiz():
-    return {"mensaje": "EcoEval funcionando correctamente ✅"}
+FRONTEND_DIR = "frontend/dist"
+
+if os.path.exists(FRONTEND_DIR):
+    if os.path.exists(f"{FRONTEND_DIR}/assets"):
+        app.mount("/assets", StaticFiles(directory=f"{FRONTEND_DIR}/assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        return FileResponse(f"{FRONTEND_DIR}/index.html")
