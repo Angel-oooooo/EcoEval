@@ -9,3 +9,4 @@ RUN VITE_API_URL=${VITE_API_URL} npm run build
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+CMD sh -c "sed -i 's/HEROKU_PORT/${PORT}/g' /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
